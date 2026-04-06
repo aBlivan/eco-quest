@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Эко-патруль | AR квест</title>
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.0/dist/mindar-image.prod.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="ui-overlay">
+        <div class="score-panel">
+            <div class="score-title">🌍 Эко-значки</div>
+            <div class="badges">
+                <div class="badge" id="badge-bottle">🗑️</div>
+                <div class="badge" id="badge-battery">🗑️</div>
+                <div class="badge" id="badge-cup">🗑️</div>
+                <div class="badge" id="badge-can">🗑️</div>
+            </div>
+            <div class="progress-text" id="progress-text">Найди 4 предмета: 0/4</div>
+        </div>
+        
+        <div class="message-panel" id="message-panel" style="display: none;">
+            <div class="message-content">
+                <h2 id="message-title">🌿 Эко-инфо</h2>
+                <div id="message-text"></div>
+                <div class="tip" id="message-tip"></div>
+                <button class="close-btn" onclick="closeMessage()">Понятно!</button>
+            </div>
+        </div>
+        
+        <div class="congrats" id="congrats" style="display: none;">
+            <div class="congrats-content">
+                <div class="trophy">🏆</div>
+                <h1>Эко-герой!</h1>
+                <p>Ты собрал все 4 значка и спас планету от мусора!</p>
+                <button onclick="location.reload()">🔁 Пройти ещё раз</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="ar-container" style="width: 100%; height: 100vh; overflow: hidden;"></div>
+
+    <script src="script.js"></script>
+</body>
+</html>
