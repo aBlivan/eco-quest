@@ -9,7 +9,18 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="ui-overlay">
+    <!-- ЭКРАН ЗАПУСКА С КНОПКОЙ -->
+    <div id="start-screen" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, #1a5f2a, #0d3b1a); z-index: 100; display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; text-align: center; padding: 20px;">
+        <div style="font-size: 80px; margin-bottom: 20px;">🌍</div>
+        <h1 style="font-size: 32px; margin-bottom: 10px;">Эко-патруль</h1>
+        <p style="font-size: 16px; margin-bottom: 30px; opacity: 0.9;">Наведи камеру на предметы, чтобы получить эко-значки</p>
+        <button id="start-camera-btn" style="background: #4CAF50; color: white; border: none; padding: 16px 32px; border-radius: 50px; font-size: 20px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+            🎥 Включить камеру
+        </button>
+        <p style="font-size: 12px; margin-top: 30px; opacity: 0.6;">Потребуется разрешение на доступ к камере</p>
+    </div>
+
+    <div class="ui-overlay" style="display: none;" id="ui-overlay">
         <div class="score-panel">
             <div class="score-title">🌍 Эко-значки</div>
             <div class="badges">
@@ -40,7 +51,7 @@
         </div>
     </div>
 
-    <div id="ar-container" style="width: 100%; height: 100vh; overflow: hidden;"></div>
+    <div id="ar-container" style="width: 100%; height: 100vh; overflow: hidden; display: none;"></div>
 
     <script src="script.js"></script>
 </body>
