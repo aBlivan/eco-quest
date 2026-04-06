@@ -1,58 +1,184 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Эко-патруль | AR квест</title>
-    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.0/dist/mindar-image.prod.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
-    <!-- ЭКРАН ЗАПУСКА С КНОПКОЙ -->
-    <div id="start-screen" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, #1a5f2a, #0d3b1a); z-index: 100; display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; text-align: center; padding: 20px;">
-        <div style="font-size: 80px; margin-bottom: 20px;">🌍</div>
-        <h1 style="font-size: 32px; margin-bottom: 10px;">Эко-патруль</h1>
-        <p style="font-size: 16px; margin-bottom: 30px; opacity: 0.9;">Наведи камеру на предметы, чтобы получить эко-значки</p>
-        <button id="start-camera-btn" style="background: #4CAF50; color: white; border: none; padding: 16px 32px; border-radius: 50px; font-size: 20px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
-            🎥 Включить камеру
-        </button>
-        <p style="font-size: 12px; margin-top: 30px; opacity: 0.6;">Потребуется разрешение на доступ к камере</p>
-    </div>
+const itemsData = {
+    bottle: {
+        name: 'Пластиковая бутылка',
+        harm: '😢 Разлагается 450 лет! Пластик попадает в океан, рыбы принимают его за еду и погибают.',
+        tip: '✅ Используй многоразовую бутылку. Сдавай пластик в спецконтейнеры.',
+        icon: '💧'
+    },
+    battery: {
+        name: 'Батарейка',
+        harm: '☠️ Одна батарейка отравляет 20 м² земли! Содержит ртуть и свинец.',
+        tip: '✅ Сдавай в пункты приёма (IKEA, ВкусВилл). Переходи на аккумуляторы!',
+        icon: '🔋'
+    },
+    cup: {
+        name: 'Одноразовый стаканчик',
+        harm: '🥤 Внутри покрыт пластиком, поэтому НЕ перерабатывается!',
+        tip: '✅ Носи с собой термокружку. В кофейнях дают скидку за свой стакан!',
+        icon: '🧋'
+    },
+    can: {
+        name: 'Аэрозольный баллончик',
+        harm: '💨 Разрушает озоновый слой и может взорваться на свалке.',
+        tip: '✅ Полностью опорожни и сдай в пункт приёма опасных отходов.',
+        icon: '🧴'
+    }
+};
 
-    <div class="ui-overlay" style="display: none;" id="ui-overlay">
-        <div class="score-panel">
-            <div class="score-title">🌍 Эко-значки</div>
-            <div class="badges">
-                <div class="badge" id="badge-bottle">🗑️</div>
-                <div class="badge" id="badge-battery">🗑️</div>
-                <div class="badge" id="badge-cup">🗑️</div>
-                <div class="badge" id="badge-can">🗑️</div>
-            </div>
-            <div class="progress-text" id="progress-text">Найди 4 предмета: 0/4</div>
-        </div>
+let collected = {
+    bottle: false,
+    battery: false,
+    cup: false,
+    can: false
+};
+
+let totalCollected = 0;
+let currentMessageShowing = false;
+let mindARInstance = null;
+
+function showTemporaryMessage(text, duration, isError = false) {
+    const msgDiv = document.createElement('div');
+    msgDiv.textContent = text;
+    msgDiv.style.position = 'fixed';
+    msgDiv.style.bottom = '100px';
+    msgDiv.style.left = '20px';
+    msgDiv.style.right = '20px';
+    msgDiv.style.backgroundColor = isError ? 'rgba(255,0,0,0.9)' : 'rgba(0,0,0,0.85)';
+    msgDiv.style.color = 'white';
+    msgDiv.style.padding = '12px';
+    msgDiv.style.borderRadius = '40px';
+    msgDiv.style.textAlign = 'center';
+    msgDiv.style.fontSize = '14px';
+    msgDiv.style.zIndex = '15';
+    msgDiv.style.backdropFilter = 'blur(10px)';
+    msgDiv.style.border = isError ? '1px solid red' : '1px solid #4CAF50';
+    document.body.appendChild(msgDiv);
+    
+    setTimeout(() => {
+        if (msgDiv && msgDiv.remove) msgDiv.remove();
+    }, duration);
+}
+
+async function startAR() {
+    // Скрываем стартовый экран, показываем AR
+    document.getElementById('start-screen').style.display = 'none';
+    document.getElementById('ui-overlay').style.display = 'block';
+    document.getElementById('ar-container').style.display = 'block';
+    
+    showTemporaryMessage('🎥 Запуск камеры... Разрешите доступ', 3000);
+    
+    try {
+        // Сначала запрашиваем разрешение на камеру вручную
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        // Останавливаем поток (MindAR сам запросит снова, но разрешение уже дано)
+        stream.getTracks().forEach(track => track.stop());
         
-        <div class="message-panel" id="message-panel" style="display: none;">
-            <div class="message-content">
-                <h2 id="message-title">🌿 Эко-инфо</h2>
-                <div id="message-text"></div>
-                <div class="tip" id="message-tip"></div>
-                <button class="close-btn" onclick="closeMessage()">Понятно!</button>
-            </div>
-        </div>
+        showTemporaryMessage('✅ Доступ к камере получен! Ищу маркеры...', 2000);
         
-        <div class="congrats" id="congrats" style="display: none;">
-            <div class="congrats-content">
-                <div class="trophy">🏆</div>
-                <h1>Эко-герой!</h1>
-                <p>Ты собрал все 4 значка и спас планету от мусора!</p>
-                <button onclick="location.reload()">🔁 Пройти ещё раз</button>
-            </div>
-        </div>
-    </div>
+        // Запускаем MindAR
+        mindARInstance = new MindAR.Image({
+            container: document.getElementById('ar-container'),
+            imageTargetSrc: 'target.mind',
+            maxTrack: 1,
+            autoStart: true
+        });
 
-    <div id="ar-container" style="width: 100%; height: 100vh; overflow: hidden; display: none;"></div>
+        await mindARInstance.start();
+        
+        showTemporaryMessage('🔍 Наведи камеру на эко-предметы (бутылка, батарейка, стаканчик, баллончик)', 5000);
+        
+        mindARInstance.addEventListener('targetFound', (event) => {
+            const targetName = event.detail.name;
+            
+            if (!collected[targetName] && !currentMessageShowing) {
+                collected[targetName] = true;
+                totalCollected++;
+                
+                const badgeMap = {
+                    bottle: 'badge-bottle',
+                    battery: 'badge-battery',
+                    cup: 'badge-cup',
+                    can: 'badge-can'
+                };
+                const badgeElement = document.getElementById(badgeMap[targetName]);
+                if (badgeElement) {
+                    badgeElement.classList.add('collected');
+                    badgeElement.innerHTML = '✅';
+                }
+                
+                document.getElementById('progress-text').innerHTML = `Найди 4 предмета: ${totalCollected}/4`;
+                showInfoCard(targetName);
+                
+                if (totalCollected === 4) {
+                    setTimeout(() => {
+                        document.getElementById('congrats').style.display = 'flex';
+                    }, 1000);
+                }
+            }
+        });
+        
+    } catch (err) {
+        console.error('Ошибка доступа к камере:', err);
+        
+        let errorMsg = '';
+        if (err.name === 'NotAllowedError') {
+            errorMsg = '❌ Вы не разрешили доступ к камере. Нажмите на значок замка 🔒 в адресной строке и разрешите камеру, затем обновите страницу.';
+        } else if (err.name === 'NotFoundError') {
+            errorMsg = '❌ Камера не найдена на вашем устройстве.';
+        } else {
+            errorMsg = `❌ Ошибка: ${err.message || err.name}`;
+        }
+        
+        showTemporaryMessage(errorMsg, 8000, true);
+        
+        // Показываем кнопку повтора
+        const retryBtn = document.createElement('button');
+        retryBtn.textContent = '🔄 Попробовать снова';
+        retryBtn.style.position = 'fixed';
+        retryBtn.style.bottom = '50px';
+        retryBtn.style.left = '50%';
+        retryBtn.style.transform = 'translateX(-50%)';
+        retryBtn.style.padding = '12px 24px';
+        retryBtn.style.backgroundColor = '#4CAF50';
+        retryBtn.style.color = 'white';
+        retryBtn.style.border = 'none';
+        retryBtn.style.borderRadius = '40px';
+        retryBtn.style.zIndex = '100';
+        retryBtn.style.fontSize = '16px';
+        retryBtn.style.cursor = 'pointer';
+        retryBtn.onclick = () => {
+            retryBtn.remove();
+            startAR();
+        };
+        document.body.appendChild(retryBtn);
+    }
+}
 
-    <script src="script.js"></script>
-</body>
-</html>
+function showInfoCard(itemKey) {
+    currentMessageShowing = true;
+    const data = itemsData[itemKey];
+    
+    document.getElementById('message-title').innerHTML = `${data.icon} ${data.name}`;
+    document.getElementById('message-text').innerHTML = `<strong>🌿 Вред природе:</strong><br>${data.harm}`;
+    document.getElementById('message-tip').innerHTML = `<strong>💚 Как помочь:</strong><br>${data.tip}`;
+    document.getElementById('message-panel').style.display = 'block';
+    
+    setTimeout(() => {
+        if (currentMessageShowing) closeMessage();
+    }, 8000);
+}
+
+function closeMessage() {
+    document.getElementById('message-panel').style.display = 'none';
+    currentMessageShowing = false;
+}
+
+// Запуск по кнопке
+document.addEventListener('DOMContentLoaded', () => {
+    const startBtn = document.getElementById('start-camera-btn');
+    if (startBtn) {
+        startBtn.addEventListener('click', startAR);
+    }
+});
+
+window.closeMessage = closeMessage;
